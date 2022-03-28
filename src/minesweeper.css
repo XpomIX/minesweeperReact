@@ -1,3 +1,12 @@
-.minesweeper-row {
+.minesweeper {
+    margin-left: auto;
+    margin-right: auto;
+}
+.minesweeper-content {
+    position: relative;
+    border: 1px solid gray;
+}
+.minesweeper-content-row {
     display: flex;
+    flex-wrap: nowrap;
 }
