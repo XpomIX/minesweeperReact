@@ -18,13 +18,16 @@
     background: white;
     cursor: pointer;
 }
+.minesweeper-header__restart--win img {
+    width: 50px !important;
+}
 .minesweeper-header__restart img{
     width: 40px;
     transition: 0.4s;
 }
 
 .minesweeper-header__restart:hover img{
-    width: 45px;
+    width: 50px;
 }
 .minesweeper-header__mines-left {
     font-size: 20px;

@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Cell } from './cell/cell.lib';
+import { Cell, markTypes } from './cell/cell.lib';
 import './minesweeper.css';
 import CellComponent from './cell/cell.component';
 import Header from './components/header/header.component';
 import Modal from './components/modal/modal.component';
+import { checkWin } from './minesweeper.lib';
 
 const BOARD_HEIGHT = 15;
 const BOARD_WIDTH = 30;
-const MINES_AMOUNT = 70;
+const MINES_AMOUNT = 100;
 const CELL_SIZE = 40;
 
 export const gameStates = {
@@ -59,22 +60,6 @@ const Minesweeper = () => {
 		interval = setInterval(() => setGameDuration(gameDuration => gameDuration + 1), 1000);
 	}
 
-	const checkWin = () => {
-		let foundUnopenedCells = 0;
-		let foundFlaggedMines = 0;
-		for (let i = 0; i < BOARD_HEIGHT; i++) {
-			for (let j = 0; j < BOARD_WIDTH; j++) {
-				if ((!board[i][j].isBomb()) && (!board[i][j].opened)) {
-					foundUnopenedCells++;
-				}
-				if (board[i][j].isBomb() && board[i][j].marked) {
-					foundFlaggedMines++;
-				}
-			}
-		}
-		return foundUnopenedCells === 0 && foundFlaggedMines === MINES_AMOUNT;
-	}
-
 	const generateMines = (index1, index2) => {
 		let boardCopy = board;
 		let totalMines = 0;
@@ -118,22 +103,30 @@ const Minesweeper = () => {
 
 	const openNeighboringEmpty = (boardCopy) => {
 		let cellOpened = false;
+		let currentCell;
+		let currentNeighboringCell;
 		do {
 			cellOpened = false;
 			for (let i = 0; i < BOARD_HEIGHT; i++) {
 				for (let j = 0; j < BOARD_WIDTH; j++) {
-					if ((boardCopy[i][j].value === 0) && (boardCopy[i][j].opened) && (!boardCopy[i][j].checked)) {
+					currentCell = boardCopy[i][j];
+					if ((currentCell.value === 0) && (currentCell.opened) && (!currentCell.checked)) {
 						for (let iw = -1; iw <= 1; iw++) {
 							for (let jh = -1; jh <= 1; jh++) {
 								if (((BOARD_HEIGHT > i + iw) && (i + iw >= 0)) && ((BOARD_WIDTH > j + jh) && (j + jh >= 0))) {
-									if (!boardCopy[i + iw][j + jh].isBomb() && !boardCopy[i + iw][j + jh].opened) {
-										boardCopy[i + iw][j + jh].open();
+									currentNeighboringCell = boardCopy[i + iw][j + jh];
+									if (!currentNeighboringCell.isBomb() && !currentNeighboringCell.opened) {
+										if (currentNeighboringCell.marked === markTypes.flag) {
+											currentNeighboringCell.mark();
+											setFlagsLeft(flagsLeft => flagsLeft + 1);
+										}
+										currentNeighboringCell.open();
 										cellOpened = true;
 									}
 								}
 							}
 						}
-						boardCopy[i][j].checked = true;
+						currentCell.checked = true;
 					}
 				}
 			}
@@ -181,13 +174,42 @@ const Minesweeper = () => {
 				changeWholeBoard(boardCopy);
 			}
 		}
-		if (checkWin()) {
+		if (checkWin(board, MINES_AMOUNT)) {
 			setGameState(gameStates.win);
 		}
 	}
 
+	const markCell = (index1, index2) => {
+		let pressedCell = board[index1][index2];
+
+		switch (pressedCell.marked) {
+			case markTypes.notMarked:
+				if (flagsLeft > 0) {
+					pressedCell.mark();
+					setFlagsLeft(flagsLeft => flagsLeft - 1);
+
+					if (checkWin(board, MINES_AMOUNT)) {
+						setGameState(gameStates.win);
+					}
+				}
+				break;
+
+			case markTypes.flag:
+				pressedCell.mark();
+				setFlagsLeft(flagsLeft => flagsLeft + 1);
+				break;
+
+			case markTypes.question:
+				pressedCell.mark();
+				break;
+		}
+
+		changeOneCell(index1, index2, pressedCell);
+	}
+
 	const handleClickLMB = (index1, index2) => {
-		if (gameState === gameStates.isPlaying) {
+		let pressedCell = board[index1][index2];
+		if (gameState === gameStates.isPlaying && !(pressedCell.marked === markTypes.flag) && !pressedCell.opened) {
 			if (isFirstStep) {
 				firstStep(index1, index2);
 				setIsFirstStep(false);
@@ -198,25 +220,10 @@ const Minesweeper = () => {
 	}
 
 	const handleClickRMB = (index1, index2) => {
-		if (gameState === gameStates.isPlaying) {
+		let pressedCell = board[index1][index2];
 
-			let pressedCell = board[index1][index2];
-			if (!pressedCell.opened) {
-				if (pressedCell.marked) {
-					pressedCell.mark();
-					setFlagsLeft(flagsLeft => flagsLeft + 1);
-				} else {
-					if (flagsLeft !== 0) {
-						pressedCell.mark();
-						setFlagsLeft(flagsLeft => flagsLeft - 1);
-						if (checkWin()) {
-							setGameState(gameStates.win);
-						}
-					}
-				}
-				changeOneCell(index1, index2, pressedCell);
-			}
-
+		if (gameState === gameStates.isPlaying && !pressedCell.opened) {
+			markCell(index1, index2);
 		}
 	}
 
@@ -246,11 +253,18 @@ const Minesweeper = () => {
 		</>
 	)
 
+	const timeToString = () => {
+		const seconds = gameDuration % 60;
+		const minutes = Math.floor(gameDuration / 60);
+
+		return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+	}
+
 	return (
 		<div className={'minesweeper'} style={{ width: `${CELL_SIZE * BOARD_WIDTH}px` }}>
-			<Header gameState={gameState} minesLeft={flagsLeft} handleRestart={restart} time={gameDuration} />
+			<Header gameState={gameState} minesLeft={flagsLeft} handleRestart={restart} time={timeToString()} />
 			<div className={'minesweeper-content'}>
-				<Modal gameState={gameState} time={gameDuration} />
+				<Modal gameState={gameState} time={timeToString()} />
 				{renderBoard()}
 			</div>
 		</div>

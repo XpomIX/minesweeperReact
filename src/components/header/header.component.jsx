@@ -30,17 +30,10 @@ const Header = ({ gameState, minesLeft, handleRestart, time }) => {
         return `Осталось ${minesLeft} ${word}${endingByNum()}`;
     }
 
-    const getTime = () => {
-        const seconds = time % 60;
-        const minutes = Math.floor(time / 60);
-
-        return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-    }
-
     return (
         <div className={'minesweeper-header'}>
-            <div className={'minesweeper-header__time'}>{getTime()}</div>
-            <div className={'minesweeper-header__restart'} onClick={handleRestart}>
+            <div className={'minesweeper-header__time'}>{time}</div>
+            <div className={`minesweeper-header__restart ${!(gameState === gameStates.isPlaying) ? 'minesweeper-header__restart--win' : ''}`} onClick={handleRestart}>
                 <img alt={''} src={`${gameStatesImages[gameState]}`} />
             </div>
             <div className={'minesweeper-header__mines-left'}>{getMinesLeft()}</div>

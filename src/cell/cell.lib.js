@@ -2,12 +2,17 @@ export const cellTypes = {
 	bomb: 0,
 	cell: 1
 }
+export const markTypes = {
+	notMarked: 0,
+	flag: 1,
+	question: 2
+}
 export class Cell {
 	constructor() {
 		this.type = cellTypes.cell;
 		this.value = 0;
 		this.opened = false;
-		this.marked = false;
+		this.marked = markTypes.notMarked;
 		this.checked = false;
 	}
 
@@ -24,7 +29,19 @@ export class Cell {
 
 	mark() {
 		if (!this.opened) {
-			this.marked = !this.marked
+			switch (this.marked) {
+				case markTypes.notMarked:
+					this.marked = markTypes.flag;
+					break;
+
+				case markTypes.flag:
+					this.marked = markTypes.question;
+					break;
+
+				case markTypes.question:
+					this.marked = markTypes.notMarked;
+					break;
+			}
 		}
 	}
 }

@@ -7,16 +7,10 @@ const Modal = ({ gameState, time }) => {
         [gameStates.lose]: 'modal-fade--win',
         [gameStates.win]: 'modal-fade--lose'
     }
+
     const titleByGameState = {
         [gameStates.lose]: 'Проигрыш, попробуй ещё раз!',
         [gameStates.win]: 'Победа! Молодец!'
-    }
-
-    const getTime = () => {
-        const seconds = time % 60;
-        const minutes = Math.floor(time / 60);
-
-        return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
     }
 
     return (
@@ -25,9 +19,7 @@ const Modal = ({ gameState, time }) => {
                 <div>
                     {titleByGameState[gameState]}
                 </div>
-                <div>
-                    Время: {getTime()}
-                </div>
+                Время: {time}
             </div>
         </div>
     )
